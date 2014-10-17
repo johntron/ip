@@ -1,5 +1,4 @@
-var IP = module.exports,
-    v4 = new RegExp(/^(\d{1,3}\.){3}\d{1,3}$/),
+var v4 = new RegExp(/^(\d{1,3}\.){3}\d{1,3}$/),
     v6 = new RegExp(/^[a-f0-9:]+$/);
 
 /**
@@ -35,7 +34,7 @@ function normalize_v6(addr) {
     return head.concat(tail);
 }
 
-IP = function (addr) {
+function IP(addr) {
     if (addr instanceof IP) {
         return addr;
     }
@@ -57,7 +56,7 @@ IP = function (addr) {
             self.tets.push(hextet & 0xff); // Second word
         });
     }
-};
+}
 
 IP.prototype.equal = function (test) {
     test = IP(test);
@@ -98,6 +97,16 @@ IP.prototype.less = function (test) {
 
     return false;
 };
+
+IP.prototype.lessOrEqual = function (test) {
+	return this.less(test) || this.equal(test);
+};
+
+IP.prototype.greaterOrEqual = function (test) {
+	return this.greater(test) || this.equal(test);
+};
+
+module.exports = IP;
 
 //var tests = [
 //    // v4

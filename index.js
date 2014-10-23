@@ -1,17 +1,45 @@
 var v4 = new RegExp(/^(\d{1,3}\.){3}\d{1,3}$/),
-    v6 = new RegExp(/^[a-f0-9:]+$/);
+    v6 = new RegExp(/^[a-f0-9:]+$/i);
+
+function IP(addr) {
+    if (addr instanceof IP) {
+        return addr;
+    }
+
+    var self = this;
+
+    self.addr = addr;
+    self.tets = []; // octets (v4) or hextets (v6)
+
+    if (v4.test(addr)) {
+        addr.split(/\./g).forEach(function (octet) {
+            octet = parseInt(octet, 10);
+            self.tets.push(octet);
+        });
+    } else if (v6.test(addr)) {
+        IP.normalize_v6(addr).forEach(function (hextet) {
+            hextet = parseInt(hextet, 16);
+            self.tets.push(hextet >> 8); // First word
+            self.tets.push(hextet & 0xff); // Second word
+        });
+    }
+}
+
 
 /**
  * Decompresses zeros
  * @param addr
  * @return {Array} of hextets in base16
  */
-function normalize_v6(addr) {
+IP.normalize_v6 = function (addr) {
     addr = addr.split(/::/g, 2); // Zero-compression - split at double-colon
 
     // Break into hextets
     var head = (addr[0] || '').split(/:/g, 8),
         tail = (addr[1] || '').split(/:/g, 8);
+
+    // Remove '' elements from tail
+    tail = tail.filter(function (el) { return el.length; });
 
     // Decompress zero hextets
     if (tail.length === 0) {
@@ -32,31 +60,11 @@ function normalize_v6(addr) {
     }
 
     return head.concat(tail);
-}
+};
 
-function IP(addr) {
-    if (addr instanceof IP) {
-        return addr;
-    }
-
-    var self = this;
-
-    self.addr = addr;
-    self.tets = []; // octets (v4) or hextets (v6)
-
-    if (v4.test(addr)) {
-        addr.split(/\./g).forEach(function (octet) {
-            octet = parseInt(octet, 10);
-            self.tets.push(octet);
-        });
-    } else if (v6.test(addr)) {
-        normalize_v6(addr).forEach(function (hextet) {
-            hextet = parseInt(hextet, 16);
-            self.tets.push(hextet >> 8); // First word
-            self.tets.push(hextet & 0xff); // Second word
-        });
-    }
-}
+IP.prototype.version = function () {
+    return this.tets.length > 4 ? 6 : 4;
+};
 
 IP.prototype.equal = function (test) {
     test = IP(test);
@@ -109,6 +117,8 @@ IP.prototype.greaterOrEqual = function (test) {
 module.exports = IP;
 
 //var tests = [
+//    // Format: method, first operand, second operand, expected value
+//
 //    // v4
 //    // Basics
 //    ['equal', '0.0.0.0', '0.0.0.0', true],
